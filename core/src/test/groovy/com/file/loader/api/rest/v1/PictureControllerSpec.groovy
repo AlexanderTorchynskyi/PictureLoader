@@ -1,119 +1,67 @@
 package com.file.loader.api.rest.v1
 
-import com.sapsystem.api.rest.aggregator.AssetAggregator
-import com.sapsystem.api.rest.v1.dto.resource.AssetDTO
-import com.sapsystem.api.rest.v1.dto.resource.DataPagedResources
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.web.HateoasPageableHandlerMethodArgumentResolver
-import org.springframework.data.web.PagedResourcesAssembler
-import org.springframework.hateoas.PagedResources
+import com.file.loader.service.picture.PictureService
+import org.bson.types.ObjectId
+import org.springframework.core.io.UrlResource
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
-import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder
-import org.springframework.web.util.UriComponentsBuilder
-import org.springframework.web.util.WebUtils
+import org.springframework.mock.web.MockMultipartFile
 import spock.lang.Specification
-
-import javax.servlet.http.HttpServletRequest
 
 class PictureControllerSpec extends Specification {
 
-    def request = Mock(HttpServletRequest) {
-        getRequestURL() >> new StringBuffer("http://localhost:8080")
-        getHeaderNames() >> Collections.emptyEnumeration()
-        getAttribute(WebUtils.INCLUDE_CONTEXT_PATH_ATTRIBUTE) >> "http://localhost:8080"
-        getAttribute(WebUtils.INCLUDE_REQUEST_URI_ATTRIBUTE) >> "http://localhost:8080"
-        getAttribute(WebUtils.INCLUDE_SERVLET_PATH_ATTRIBUTE) >> "http://localhost:8080"
-    }
-    def argumentResolver = Mock(HateoasPageableHandlerMethodArgumentResolver)
-    def urlComponent = new UriComponentsBuilder().build()
-    def assembler = Spy(PagedResourcesAssembler, constructorArgs: [argumentResolver, urlComponent])
-    def aggregator = Mock(AssetAggregator.class)
-    def controller = new PictureController(aggregator)
+    def service = Mock(PictureService.class)
+    def controller = new PictureController(service)
 
-    def setup() {
-        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request))
-    }
-
-    def "should get all the assets(first page)"() {
+    def "should return status accepted"() {
         setup:
-        def filter = ""
-        def pageable = new PageRequest(0, 20)
-        def assetDTO = new AssetDTO(1L, "22Y2071", 34817954, "Samson", "Samson",
-                "123-54-33320000", 1535443954232L, "V022 AB22 Y5090")
+        def file = new MockMultipartFile("test", "test.png", "image/png", new byte[5])
+        def callback = "http://localhost:8080/call/back"
 
         when:
-        def data = controller.getAllAssets(filter, pageable, assembler)
+        def result = controller.create(callback, file)
 
         then:
-        1 * aggregator.getAllAssets(filter, pageable) >> new PageImpl<>([assetDTO], pageable, 1)
-        1 * assembler.toResource(new PageImpl<>([assetDTO], pageable, 1)) >> new PagedResources<>([assetDTO], new PagedResources.PageMetadata(1, 0, 1))
-        data == new DataPagedResources([assetDTO], new PagedResources.PageMetadata(1, 0, 1), [])
+        1 * service.store(file, callback)
+        result == new ResponseEntity(HttpStatus.ACCEPTED)
     }
 
-    def "should get the asset by id"() {
+    def "should return status bad request"() {
         setup:
-        def id = 1L
-        def assetDTO = new AssetDTO(1L, "22Y2071", 34817954, "Samson", "Samson",
-                "123-54-33320000", 1535443954232L, "V022 AB22 Y5090")
+        def file = new MockMultipartFile("test", "test.pdf", "file/pdf", new byte[5])
+        def callback = "http://localhost:8080/call/back"
 
         when:
-        def data = controller.getAsset(id)
+        def result = controller.create(callback, file)
 
         then:
-        1 * aggregator.getAsset(id) >> assetDTO
-        data == assetDTO
+        result == new ResponseEntity(HttpStatus.BAD_REQUEST)
     }
 
-    def "should add the asset"() {
-        def id = 1L
-        def assetDTO = new AssetDTO(1L, "22Y2071", 34817954, "Samson", "Samson",
-                "123-54-33320000", 1535443954232L, "V022 AB22 Y5090")
-        def expectedResult = ResponseEntity.created(
-                MvcUriComponentsBuilder.fromController(PictureController.class)
-                        .path("/{id}")
-                        .buildAndExpand(id)
-                        .toUri()
-        ).build()
-
-        when:
-        def result = controller.addAsset(assetDTO)
-
-        then:
-        1 * aggregator.addAsset(assetDTO) >> id
-        expectedResult == result
-    }
-
-    def "should update the asset"() {
-        def id = 1L
-        def assetDTO = new AssetDTO(1L, "22Y2071", 34817954, "Samson", "Samson",
-                "123-54-33320000", 1535443954232L, "V022 AB22 Y5090")
-        def expectedResult = ResponseEntity.created(
-                MvcUriComponentsBuilder.fromController(PictureController.class)
-                        .path("/{id}")
-                        .buildAndExpand(id)
-                        .toUri()
-        ).build()
-
-        when:
-        def result = controller.updateAsset(id, assetDTO)
-
-        then:
-        1 * aggregator.updateAsset(id, assetDTO) >> id
-        expectedResult == result
-    }
-
-    def "should delete the asset"() {
+    def "should return status 200 on delete "() {
         setup:
-        def id = 1L
+        def id = new ObjectId()
 
         when:
-        def result = controller.deleteAsset(id)
+        def result = controller.delete(id)
 
         then:
-        1 * aggregator.deleteAsset(id)
-        result == ResponseEntity.noContent().build()
+        1 * service.delete(id)
+        result == new ResponseEntity(HttpStatus.OK)
+    }
+
+    def "should return resource"() {
+        setup:
+        def id = new ObjectId()
+        def size = "small"
+        def resource = new UrlResource("http://localhost:8080/test/url")
+
+        when:
+        def result = controller.get(id, size)
+
+        then:
+        service.loadAsResource(id, size) >> resource
+        result == ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"").body(resource)
     }
 }

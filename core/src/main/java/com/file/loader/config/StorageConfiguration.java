@@ -7,6 +7,13 @@ public class StorageConfiguration {
 
     private String uploadDir;
 
+    public StorageConfiguration(String uploadDir) {
+        this.uploadDir = uploadDir;
+    }
+
+    public StorageConfiguration() {
+    }
+
     public String getUploadDir() {
         return uploadDir;
     }

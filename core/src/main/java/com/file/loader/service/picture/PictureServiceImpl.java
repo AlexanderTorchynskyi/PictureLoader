@@ -81,8 +81,13 @@ public class PictureServiceImpl implements PictureService {
     }
 
     @Override
+    public void updateMany(List<Picture> pictures) {
+        pictureRepository.saveAll(pictures);
+    }
+
+    @Override
     public List<Picture> findByStatus(PictureStatus pictureStatus) {
-        return pictureRepository.findFirst10ByPictureStatus(pictureStatus);
+        return pictureRepository.findFirst50ByPictureStatus(pictureStatus);
     }
 
     private Path getPathToFile(ObjectId imageId, String size) {
@@ -127,10 +132,15 @@ public class PictureServiceImpl implements PictureService {
         picture.setCreatedDate(LocalDateTime.now());
         picture.setUpdatedDate(LocalDateTime.now());
         picture.setPictureStatus(PictureStatus.SET_UP);
-
+        picture.setFileFormat(obtainImageFormat(file.getContentType()));
         pictureRepository.save(picture);
 
         return uuid;
+    }
+
+
+    private String obtainImageFormat(String contentType) {
+        return contentType.replaceAll("image/", "");
     }
 
     private void createDirectoryIfNotExist() {

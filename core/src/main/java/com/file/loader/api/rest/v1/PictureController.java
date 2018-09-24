@@ -45,7 +45,7 @@ public class PictureController {
     //TODO: the size param might be better to make enum
     @GetMapping("/{id}")
     public ResponseEntity<?> get(@PathVariable("id") ObjectId id, @RequestParam("size") String size) {
-        Resource resource = pictureService.loadAsResource(id, size);
+            Resource resource = pictureService.loadAsResource(id, size);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);

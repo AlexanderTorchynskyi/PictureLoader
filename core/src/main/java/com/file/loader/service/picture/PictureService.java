@@ -19,4 +19,7 @@ public interface PictureService {
     List<Picture> findByStatus(PictureStatus pictureStatus);
 
     void delete(ObjectId imageId);
+
+    void updateMany(List<Picture> pictures);
+
 }

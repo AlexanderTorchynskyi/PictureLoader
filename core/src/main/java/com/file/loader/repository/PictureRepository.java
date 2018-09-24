@@ -9,6 +9,6 @@ import java.util.List;
 
 public interface PictureRepository extends MongoRepository<Picture, ObjectId> {
 
-    List<Picture> findFirst10ByPictureStatus(PictureStatus pictureStatus);
+    List<Picture> findFirst50ByPictureStatus(PictureStatus pictureStatus);
 
 }

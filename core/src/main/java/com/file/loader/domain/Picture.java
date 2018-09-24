@@ -37,6 +37,17 @@ public class Picture {
     @Field("send_counter")
     private long sendCounter;
 
+    @Field("file_format")
+    private String fileFormat;
+
+    public String getFileFormat() {
+        return fileFormat;
+    }
+
+    public void setFileFormat(String fileFormat) {
+        this.fileFormat = fileFormat;
+    }
+
     public ObjectId getId() {
         return id;
     }
